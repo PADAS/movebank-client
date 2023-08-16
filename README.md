@@ -1,2 +1,2 @@
 # movebank-client
-A pyhton client for MoveBank API
+A Python client for MoveBank API
