@@ -47,10 +47,10 @@ class MovebankClient:
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self._session.__aexit__()
 
-    async def post_tag_data(self, feed_name: str, tag_id: str, json_file):
+    async def post_tag_data(self, feed_name: str, tag_id: str, json_file, operation="add-data"):
         url = self.feeds_endpoint
         form_data = {
-            "operation": "add-data",
+            "operation": operation,
             "feed": feed_name,
             "tag": tag_id
         }
@@ -69,10 +69,10 @@ class MovebankClient:
         response.raise_for_status()
         return response.text
 
-    async def post_permissions(self, study_name: str, csv_file, append_mode=True):
+    async def post_permissions(self, study_name: str, csv_file, operation="update-user-privileges"):
         url = self.permissions_endpoint
         form_data = {
-            "operation": "add-user-privileges" if append_mode else "update-user-privileges",
+            "operation": operation,
             "study": study_name,
         }
         files = {
