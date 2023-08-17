@@ -1,10 +1,7 @@
 import os
 from pathlib import Path
-
 import pytest
-
-import pytest
-from movebank_client.client import MovebankClient
+from movebank_client import MovebankClient
 
 
 @pytest.fixture
