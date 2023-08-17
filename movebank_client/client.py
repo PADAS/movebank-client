@@ -21,6 +21,7 @@ class MovebankClient:
         self.api_version = "v1"
         self.base_url = kwargs.get("base_url", settings.MOVEBANK_API_BASE_URL)
         self.feeds_endpoint = f"{self.base_url}/movebank/service/external-feed"
+        self.permissions_endpoint = f"{self.base_url}/movebank/service/external-feed"
         # Authentication settings
         self.ssl_verify = kwargs.get("use_ssl", settings.MOVEBANK_SSL_VERIFY)
         self.username = kwargs.get("username", settings.MOVEBANK_USERNAME)
@@ -58,6 +59,27 @@ class MovebankClient:
             # Until httpx supports async file types for multipart uploads
             # https://github.com/encode/httpx/issues/1620
             "data": await json_file.read()
+        }
+        response = await self._session.post(
+            url,
+            auth=(self.username, self.password,),
+            data=form_data,
+            files=files
+        )
+        response.raise_for_status()
+        return response.text
+
+    async def post_permissions(self, study_name: str, csv_file, append_mode=True):
+        url = self.permissions_endpoint
+        form_data = {
+            "operation": "add-user-privileges" if append_mode else "update-user-privileges",
+            "study": study_name,
+        }
+        files = {
+            # Notice the whole file is loaded in memory
+            # Until httpx supports async file types for multipart uploads
+            # https://github.com/encode/httpx/issues/1620
+            "data": await csv_file.read()
         }
         response = await self._session.post(
             url,
