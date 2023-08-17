@@ -1,0 +1,20 @@
+[
+   {
+      "recorded_at":"2023-08-08T12:04:32Z",
+      "tag_id":"awt.1320894.cc53b809784e406db9cfd8dcbc624985",
+      "lon":"28.223",
+      "lat":"-25.659",
+      "sensor_type":"GPS",
+      "tag_manufacturer_name":"Africa Wildlife Tracking",
+      "gundi_urn":"urn:gundi:v1.intsrc.cc53b809784e406db9cfd8dcbc624985.1320894"
+   },
+   {
+      "recorded_at":"2023-08-08T12:05:32Z",
+      "tag_id":"awt.1320894.cc53b809784e406db9cfd8dcbc624985",
+      "lon":"28.225",
+      "lat":"-25.655",
+      "sensor_type":"GPS",
+      "tag_manufacturer_name":"Africa Wildlife Tracking",
+      "gundi_urn":"urn:gundi:v1.intsrc.cc53b809784e406db9cfd8dcbc624985.1320894"
+   }
+]
