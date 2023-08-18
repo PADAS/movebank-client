@@ -64,7 +64,7 @@ class MovebankClient:
     ):
         url = self.feeds_endpoint
         form_data = {
-            "operation": operation,
+            "operation": str(operation),
             "feed": feed_name,
             "tag": tag_id
         }
@@ -101,7 +101,7 @@ class MovebankClient:
     ):
         url = self.permissions_endpoint
         form_data = {
-            "operation": operation,
+            "operation": str(operation),
             "study": study_name,
         }
         try:  # Check if it's a valid csv with the right delimiter and columns
