@@ -1,11 +1,19 @@
+import io
+import json
 import logging
+from io import StringIO
+
+import httpx
+import csv
+from typing import Union
 from httpx import (
     AsyncClient,
     AsyncHTTPTransport,
     Timeout,
 )
 from . import settings
-
+from .errors import MBClientError, MBValidationError
+from .enums import TagDataOperations, PermissionOperations
 
 logger = logging.getLogger(__name__)
 logger.setLevel(settings.LOG_LEVEL)
@@ -47,45 +55,79 @@ class MovebankClient:
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self._session.__aexit__()
 
-    async def post_tag_data(self, feed_name: str, tag_id: str, json_file, operation="add-data"):
+    async def post_tag_data(
+            self,
+            feed_name: str,
+            tag_id: str,
+            json_file,
+            operation: Union[TagDataOperations, str] = TagDataOperations.ADD_DATA
+    ):
         url = self.feeds_endpoint
         form_data = {
             "operation": operation,
             "feed": feed_name,
             "tag": tag_id
         }
+        try:  # Check if it's a valid json
+            json_data = await json_file.read()
+            json.loads(json_data)
+        except json.decoder.JSONDecodeError:
+            raise MBValidationError("The file must contain valid json data.")
+        except Exception as e:
+            raise MBClientError(f"Error parsing json data: {e}.")
         files = {
             # Notice the whole file is loaded in memory
             # Until httpx supports async file types for multipart uploads
             # https://github.com/encode/httpx/issues/1620
-            "data": await json_file.read()
+            "data": json_data
         }
-        response = await self._session.post(
-            url,
-            auth=(self.username, self.password,),
-            data=form_data,
-            files=files
-        )
-        response.raise_for_status()
+        try:
+            response = await self._session.post(
+                url,
+                auth=(self.username, self.password,),
+                data=form_data,
+                files=files
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
         return response.text
 
-    async def post_permissions(self, study_name: str, csv_file, operation="update-user-privileges"):
+    async def post_permissions(
+            self,
+            study_name: str,
+            csv_file,
+            operation: Union[PermissionOperations, str] = PermissionOperations.ADD_USER_PRIVILEGES
+    ):
         url = self.permissions_endpoint
         form_data = {
             "operation": operation,
             "study": study_name,
         }
+        try:  # Check if it's a valid csv with the right delimiter and columns
+            csv_data = await csv_file.read()
+            csv_text = io.StringIO(csv_data.decode("utf-8"))
+            reader = csv.DictReader(csv_text, delimiter=',')
+        except Exception as e:
+            raise MBClientError(f"Error parsing csv data: {e}.")
+        else:
+            expected_columns = ["login", "tag"]
+            if reader.fieldnames != ["login", "tag"]:
+                raise MBValidationError(f"The file must have columns: {expected_columns}")
         files = {
             # Notice the whole file is loaded in memory
             # Until httpx supports async file types for multipart uploads
             # https://github.com/encode/httpx/issues/1620
-            "data": await csv_file.read()
+            "data": csv_data
         }
-        response = await self._session.post(
-            url,
-            auth=(self.username, self.password,),
-            data=form_data,
-            files=files
-        )
-        response.raise_for_status()
+        try:
+            response = await self._session.post(
+                url,
+                auth=(self.username, self.password,),
+                data=form_data,
+                files=files
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
         return response.text

@@ -37,8 +37,24 @@ def tag_data_filename():
 
 
 @pytest.fixture()
+def bad_tag_data_filename():
+    return os.path.join(
+        Path(os.path.dirname(os.path.realpath(__file__))),
+        "test_data/bad_tag_data.json"
+    )
+
+
+@pytest.fixture()
 def permissions_filename():
     return os.path.join(
         Path(os.path.dirname(os.path.realpath(__file__))),
-        "test_data/tag_data.json"
+        "test_data/permissions.csv"
+    )
+
+
+@pytest.fixture()
+def bad_permissions_filename():
+    return os.path.join(
+        Path(os.path.dirname(os.path.realpath(__file__))),
+        "test_data/bad_permissions.csv"
     )
