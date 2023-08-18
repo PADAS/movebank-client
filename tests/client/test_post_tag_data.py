@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 import aiofiles
-from movebank_client import MBValidationError
+from movebank_client import MBValidationError, TagDataOperations
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,8 @@ async def test_post_tag_data(
                 await client.post_tag_data(
                     feed_name="gundi/earthranger",
                     tag_id="awt.1320894.cc53b809784e406db9cfd8dcbc624985",
-                    json_file=tag_data
+                    json_file=tag_data,
+                    operation=TagDataOperations.ADD_DATA
                 )
 
 

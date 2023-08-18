@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 import aiofiles
-from movebank_client import MBValidationError
+from movebank_client import MBValidationError, PermissionOperations
 
 
 @pytest.mark.asyncio
@@ -19,7 +19,8 @@ async def test_post_permissions(
             async with aiofiles.open(permissions_filename, mode='rb') as perm_file:
                 await client.post_permissions(
                     study_name="gundi",
-                    csv_file=perm_file
+                    csv_file=perm_file,
+                    operation=PermissionOperations.ADD_USER_PRIVILEGES
                 )
 
 
