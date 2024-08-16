@@ -1,11 +1,11 @@
 import io
 import json
 import logging
-from io import StringIO
-
 import httpx
 import csv
-from typing import Union
+
+from datetime import datetime, timezone
+from typing import Union, List
 from httpx import (
     AsyncClient,
     AsyncHTTPTransport,
@@ -24,12 +24,16 @@ class MovebankClient:
     DEFAULT_DATA_TIMEOUT_SECONDS = 20
     DEFAULT_CONNECTION_RETRIES = 5
 
+    SENSOR_TYPE_GPS = 653
+    SENSOR_TYPE_ACCESSORY_MEASUREMENTS = 7842954
+
     def __init__(self, **kwargs):
         # API settings
         self.api_version = "v1"
         self.base_url = kwargs.get("base_url", settings.MOVEBANK_API_BASE_URL)
         self.feeds_endpoint = f"{self.base_url}/movebank/service/external-feed"
         self.permissions_endpoint = f"{self.base_url}/movebank/service/external-feed"
+        self.direct_read_endpoint = f"{self.base_url}/movebank/service/direct-read"
         # Authentication settings
         self.ssl_verify = kwargs.get("use_ssl", settings.MOVEBANK_SSL_VERIFY)
         self.username = kwargs.get("username", settings.MOVEBANK_USERNAME)
@@ -54,6 +58,83 @@ class MovebankClient:
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self._session.__aexit__()
+
+    async def get_study(self, study_id: int):
+        url = self.direct_read_endpoint
+        try:
+            response = await self._session.get(
+                url,
+                auth=(self.username, self.password),
+                params=(
+                    ('entity_type', 'study'),
+                    ('study_id', study_id),
+                    ('i_can_see_data', 'true'),
+                    ('there_are_data_which_i_cannot_see', 'false')
+                )
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
+        else:
+            if response:
+                study = csv.DictReader(io.StringIO(response.content.decode('utf8')), delimiter=',')
+                return [row for row in study]
+            logger.info('get_study - No study found')
+            return []
+
+    async def get_individuals_by_study(self, study_id: int):
+        url = self.direct_read_endpoint
+        try:
+            response = await self._session.get(
+                url,
+                auth=(self.username, self.password),
+                params=(
+                    ('entity_type', 'individual'),
+                    ('study_id', study_id)
+                )
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
+        else:
+            if response:
+                individuals = response.content.decode('utf8')
+                return list(csv.DictReader(io.StringIO(individuals), delimiter=','))
+            logger.warning(f'get_individuals_by_study: {study_id} - No Individuals Found')
+            return []
+
+    async def get_individual_events(self, *,
+                                    study_id: int = None,
+                                    individual_id: int = None,
+                                    timestamp_start: datetime = None,
+                                    timestamp_end: datetime = datetime.now(timezone.utc),
+                                    sensor_types: List[int] = [SENSOR_TYPE_GPS, SENSOR_TYPE_ACCESSORY_MEASUREMENTS],
+                                    minimum_event_id: int = 0):
+
+        url = self.direct_read_endpoint
+        timestamp_start = timestamp_start.strftime("%Y%m%d%H%M%S000")
+        timestamp_end = timestamp_end.strftime("%Y%m%d%H%M%S000")
+
+        for sensor_type in sensor_types:
+            params = (
+                ('entity_type', 'event'),
+                ('study_id', study_id),
+                ('individual_id', individual_id),
+                ('timestamp_start', timestamp_start),
+                ('timestamp_end', timestamp_end),
+                ('sensor_type_id', sensor_type),
+                ('attributes', 'all')
+            )
+            response = await self._session.get(
+                url,
+                auth=(self.username, self.password),
+                params=params
+            )
+            if response:
+                events = response.content.decode('utf8')
+                for item in csv.DictReader(io.StringIO(events), delimiter=','):
+                    if int(item.get('event_id')) >= minimum_event_id:
+                        yield item
 
     async def post_tag_data(
             self,

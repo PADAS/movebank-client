@@ -3,7 +3,10 @@
 The movebank-client is an unofficial async python client to interact with Movebank's API, developed by the Gundi team of [EarthRanger](https://www.earthranger.com/),.
 
 ## Installation
-pip installmovebank-client
+
+```bash
+pip install movebank-client
+```
 
 ## Usage
 ```
