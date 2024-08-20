@@ -76,7 +76,7 @@ class MovebankClient:
             if response:
                 token_str = response.content.decode('utf8')
                 return json.loads(token_str)
-            logger.info('get_token - Aut failed')
+            logger.info('get_token - Auth failed')
             return ""
 
     async def get_study(self, study_id: int):
