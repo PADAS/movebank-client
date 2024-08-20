@@ -59,6 +59,26 @@ class MovebankClient:
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self._session.__aexit__()
 
+    async def get_token(self):
+        url = self.direct_read_endpoint
+        try:
+            response = await self._session.get(
+                url,
+                auth=(self.username, self.password),
+                params=(
+                    ('service', 'request-token'),
+                )
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
+        else:
+            if response:
+                token_str = response.content.decode('utf8')
+                return json.loads(token_str)
+            logger.info('get_token - Aut failed')
+            return ""
+
     async def get_study(self, study_id: int):
         url = self.direct_read_endpoint
         try:
