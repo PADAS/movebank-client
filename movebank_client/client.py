@@ -14,9 +14,9 @@ from httpx import (
     AsyncHTTPTransport,
     Timeout,
 )
-from . import settings
-from .errors import MBClientError, MBValidationError
-from .enums import TagDataOperations, PermissionOperations
+from movebank_client import settings
+from movebank_client.errors import MBClientError, MBValidationError
+from movebank_client.enums import TagDataOperations, PermissionOperations
 
 logger = logging.getLogger(__name__)
 logger.setLevel(settings.LOG_LEVEL)
