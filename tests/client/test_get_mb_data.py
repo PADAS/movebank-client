@@ -30,8 +30,8 @@ async def test_get_study(
         )
         async with movebank_client as client:
             study = await client.get_study(1234567890)
-            assert len(study) == 1
-            assert study[0]["id"] == "1234567890"
+            assert isinstance(study, dict)
+            assert study["id"] == "1234567890"
 
 
 @pytest.mark.asyncio
@@ -45,5 +45,5 @@ async def test_get_individuals_by_study(
             content=mock_movebank_get_individuals_by_study_response
         )
         async with movebank_client as client:
-            individuals = await client.get_individuals_by_study(1234567890)
+            individuals = await client.get_individuals_by_study(study_id=1234567890)
             assert len(individuals) == 2
