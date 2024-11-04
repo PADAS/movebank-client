@@ -1,10 +1,8 @@
 import asyncclick as click
 import json
+
 from dateparser import parse as dp
-
 from datetime import datetime, timezone, timedelta
-
-import asyncio
 from client import MovebankClient
 
 
