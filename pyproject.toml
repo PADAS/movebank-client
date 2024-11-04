@@ -21,6 +21,7 @@ httpx = "^0.24.0"
 respx = "^0.20.1"
 backoff = "^2.2.1"
 dateparser = "^1.2.0"
+asyncclick = "^8.1.7.2"
 
 [tool.poetry.group.dev]
 optional = true
