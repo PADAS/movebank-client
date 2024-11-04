@@ -99,18 +99,16 @@ async def get_individual_events(username, password, study_id, individual_id):
         end = datetime.now(tz=timezone.utc)
         start = end - timedelta(days=1)
 
-        async def get_events():
-            items = []
-            async for item in client.get_individual_events_by_time(
-                    study_id=study_id,
-                    individual_id=individual_id,
-                    timestamp_start=start,
-                    timestamp_end=end
-            ):
-                items.append(item)
-            return items
 
-        items = await get_events()
+        items = [
+            item async for item in client.get_individual_events_by_time(
+                study_id=study_id, 
+                individual_id=individual_id, 
+                timestamp_start=start,
+                timestamp_end=end
+            )
+        ]
+
 
         print("Events:\n")
 
