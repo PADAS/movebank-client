@@ -45,3 +45,25 @@ async with aiofiles.open("data.json", mode='rb') as tag_data:
 ...
 await client.close()  # Close the session used to send requests
 ```
+
+### Using the CLI suite
+
+There are 3 commands to use directly, in order to test Movebank API
+endpoints and credentials:
+- `get-events-for-study`: Get Events for a Study
+- `get-individual-events`: Get Events for an Individual
+- `get-study`: Get a Study, with option to fetch its individuals
+
+For running the CLI suite help, run:
+
+```bash
+python cli.py --help
+```
+
+For running specific command help, run:
+
+```bash
+python cli.py <COMMAND_NAME> --help
+```
+All responses will be printed in the terminal as JSON or list responses. 
+
