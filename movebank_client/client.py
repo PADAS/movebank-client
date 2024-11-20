@@ -15,7 +15,7 @@ from httpx import (
     Timeout,
 )
 from movebank_client import settings
-from movebank_client.errors import MBClientError, MBValidationError
+from movebank_client.errors import MBClientError, MBValidationError, MBForbiddenError
 from movebank_client.enums import TagDataOperations, PermissionOperations
 
 logger = logging.getLogger(__name__)
@@ -129,6 +129,9 @@ class MovebankClient:
                 )
             )
         except httpx.HTTPError as exc:
+            if exc.response.status_code == 403:
+                # Auth failed in MB API
+                raise MBForbiddenError(f"MB API returned 403. Authentication failed - {exc}")
             raise MBClientError(f"HTTP Exception for {exc.request.url} - {exc}")
         else:
             if response:
