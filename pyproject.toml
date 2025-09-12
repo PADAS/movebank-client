@@ -17,8 +17,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.7"
 environs = "^9.5"
-httpx = "^0.24.0"
-respx = "^0.20.1"
+httpx = "^0.28.0"
+respx = "^0"
 backoff = "^2.2.1"
 dateparser = "^1.2.0"
 asyncclick = "^8.1.7.2"
