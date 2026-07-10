@@ -41,6 +41,31 @@ async def on_licenseterms_response(details):
     details['kwargs']['cookies'] = response.cookies
 
 
+def parse_retry_after(response, default=15):
+    """Parse Retry-After header, handling both integer seconds and HTTP-date formats."""
+    retry_after = response.headers.get("Retry-After")
+    if retry_after is None:
+        return default
+    try:
+        return int(retry_after)
+    except ValueError:
+        # Could be HTTP-date format; fall back to the default.
+        logger.warning(f"Unexpected Retry-After format: {retry_after}, using default {default}s")
+        return default
+
+
+def on_backoff_429(details):
+    wait = details.get('wait', 0)
+    tries = details.get('tries', 0)
+    logger.warning(f"Rate limited (429). Attempt {tries}, waiting {wait:.1f}s before retry.")
+
+
+def on_giveup_429(details):
+    tries = details.get('tries', 0)
+    elapsed = details.get('elapsed', 0)
+    logger.error(f"Rate limit retries exhausted after {tries} attempts over {elapsed:.1f}s")
+
+
 class MovebankClient:
     DEFAULT_CONNECT_TIMEOUT_SECONDS = 3.1
     DEFAULT_DATA_TIMEOUT_SECONDS = 20
@@ -91,8 +116,12 @@ class MovebankClient:
     @backoff.on_predicate(
         backoff.runtime,
         predicate=lambda r: r.status_code == 429,
-        value=lambda r: int(r.headers.get("Retry-After", 15)),
+        value=parse_retry_after,
         jitter=None,
+        max_tries=3,
+        max_time=120,
+        on_backoff=on_backoff_429,
+        on_giveup=on_giveup_429,
     )
     @backoff.on_predicate(
         backoff.constant,
