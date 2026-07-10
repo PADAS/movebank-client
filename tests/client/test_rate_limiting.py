@@ -3,6 +3,7 @@ import pytest
 import respx
 
 from movebank_client.client import parse_retry_after
+from movebank_client.errors import MBClientError
 
 
 def test_parse_retry_after_integer_seconds():
@@ -34,3 +35,19 @@ async def test_429_is_retried_then_succeeds(movebank_client, mock_movebank_get_i
             individuals = await client.get_individuals_by_study(study_id=1234567890)
         assert len(individuals) == 2
         assert route.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_429_retries_exhausted_raises(movebank_client):
+    async with respx.mock(assert_all_called=False) as movebank_api_mock:
+        route = movebank_api_mock.get(movebank_client.direct_read_endpoint).mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": "0"}),
+                httpx.Response(429, headers={"Retry-After": "0"}),
+                httpx.Response(429, headers={"Retry-After": "0"}),
+            ]
+        )
+        async with movebank_client as client:
+            with pytest.raises(MBClientError):
+                await client.get_individuals_by_study(study_id=1234567890)
+        assert route.call_count == 3

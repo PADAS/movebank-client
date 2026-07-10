@@ -42,7 +42,8 @@ async def on_licenseterms_response(details):
 
 
 def parse_retry_after(response, default=15):
-    """Parse Retry-After header, handling both integer seconds and HTTP-date formats."""
+    """Parse Retry-After header as integer seconds, falling back to the default
+    for non-integer values such as HTTP-date formats."""
     retry_after = response.headers.get("Retry-After")
     if retry_after is None:
         return default
@@ -63,7 +64,9 @@ def on_backoff_429(details):
 def on_giveup_429(details):
     tries = details.get('tries', 0)
     elapsed = details.get('elapsed', 0)
-    logger.error(f"Rate limit retries exhausted after {tries} attempts over {elapsed:.1f}s")
+    message = f"Rate limit retries exhausted after {tries} attempts over {elapsed:.1f}s"
+    logger.error(message)
+    raise MBClientError(message)
 
 
 class MovebankClient:
@@ -263,7 +266,7 @@ class MovebankClient:
                 study_attributes = await self.get_study_attributes(study_id=study_id, sensor_type_id=str(sensor_type))
                 if study_attribute_names := {
                     item.get('short_name') for item in (study_attributes or [])
-                    if item.get('sensor_type_id') == str(sensor_type)
+                    if item.get('sensor_type_id') == str(sensor_type) and item.get('short_name')
                 }:
                     attributes = ','.join(sorted(study_attribute_names | self.GPS_COMMON_ATTRIBUTES))
 
