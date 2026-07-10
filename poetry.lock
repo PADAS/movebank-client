@@ -607,18 +607,18 @@ files = [
 
 [[package]]
 name = "respx"
-version = "0.20.2"
+version = "0.22.0"
 description = "A utility for mocking out the Python HTTPX and HTTP Core libraries."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "respx-0.20.2-py2.py3-none-any.whl", hash = "sha256:ab8e1cf6da28a5b2dd883ea617f8130f77f676736e6e9e4a25817ad116a172c9"},
-    {file = "respx-0.20.2.tar.gz", hash = "sha256:07cf4108b1c88b82010f67d3c831dae33a375c7b436e54d87737c7f9f99be643"},
+    {file = "respx-0.22.0-py2.py3-none-any.whl", hash = "sha256:631128d4c9aba15e56903fb5f66fb1eff412ce28dd387ca3a81339e52dbd3ad0"},
+    {file = "respx-0.22.0.tar.gz", hash = "sha256:3c8924caa2a50bd71aefc07aa812f2466ff489f1848c96e954a5362d17095d91"},
 ]
 
 [package.dependencies]
-httpx = ">=0.21.0"
+httpx = ">=0.25.0"
 
 [[package]]
 name = "six"
@@ -705,4 +705,4 @@ devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pyte
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.8,<4.0"
-content-hash = "6df53ff48507795127aa2e82a0da7327adb35f241b510ed3fae76c19b897b7ee"
+content-hash = "70dad920afad2db8067bef8c3eea4503037e3d98b64b3efdf289190a544c31e2"
