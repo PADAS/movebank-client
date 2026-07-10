@@ -79,6 +79,20 @@ class MovebankClient:
         'accessory-measurements': SENSOR_TYPE_ACCESSORY_MEASUREMENTS
     }
 
+    # Attributes the integrations rely on for cursoring and transforms —
+    # always requested for GPS queries, in addition to study-advertised ones.
+    GPS_COMMON_ATTRIBUTES = {
+        'event_id',
+        'individual_id',
+        'deployment_id',
+        'tag_id',
+        'study_id',
+        'sensor_type_id',
+        'individual_local_identifier',
+        'tag_local_identifier',
+        'individual_taxon_canonical_name',
+    }
+
     def __init__(self, **kwargs):
         # API settings
         self.api_version = "v1"
@@ -233,43 +247,41 @@ class MovebankClient:
             sensor_type_ids: typing.List[int] = [SENSOR_TYPE_GPS],
             minimum_event_id: int = 0
     ):
-        # Date Format: yyyyMMddHHmmssSSS
-        # See below table for sensor_type_id's.
-        # logger.info(f'get_individual_events_by_time: study_id: {study_id} and individual: {individual_id}')
-
-        timestamp_end = timestamp_end.strftime("%Y%m%d%H%M%S000") if timestamp_end else None
+        # Movebank expects timestamps as yyyyMMddHHmmssSSS
+        timestamp_end_str = timestamp_end.strftime("%Y%m%d%H%M%S000") if timestamp_end else None
         url = self.direct_read_endpoint
         for sensor_type in sensor_type_ids:
-            # We can expect to get accessory-data out of order, so we query with a one hour overlap.
             if sensor_type == self.SENSOR_TYPE_ACCESSORY_MEASUREMENTS:
+                # Accessory data can arrive out of order, so query with a one-hour overlap.
                 lower_bound = (timestamp_start - timedelta(minutes=60)).strftime("%Y%m%d%H%M%S000")
             else:
                 lower_bound = timestamp_start.strftime("%Y%m%d%H%M%S000")
 
-                # attributes = 'individual_id,deployment_id,tag_id,study_id,sensor_type_id,individual_local_identifier,tag_local_identifier,individual_taxon_canonical_name,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,activity_count,barometric_height,barometric_pressure,battery_charge_percent,battery_charging_current,cpu_temperature,data_decoding_software,external_temperature,gps_hdop,gps_horizontal_accuracy_estimate,gps_satellite_count,gps_speed_accuracy_estimate,gps_time_to_fix,ground_speed,heading,height_above_ellipsoid,height_above_msl,icarus_ecef_vx,icarus_ecef_vy,icarus_ecef_vz,icarus_ecef_x,icarus_ecef_y,icarus_ecef_z,icarus_reset_counter,icarus_timestamp_accuracy,icarus_timestamp_source,icarus_uplink_counter,import_marked_outlier,light_level,location_error_numerical,location_error_text,location_lat,location_long,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,mortality_status,ornitela_transmission_protocol,savannah_alarm_type,savannah_record_type,tag_voltage,timestamp,transmission_protocol,underwater_time,event_id,visible,update_ts'
-
+            attributes = 'all'
+            if sensor_type == self.SENSOR_TYPE_GPS:
+                # For GPS, narrow the attributes list using study metadata when available.
                 study_attributes = await self.get_study_attributes(study_id=study_id, sensor_type_id=str(sensor_type))
-                if attributes := ','.join([item.get('short_name') for item in study_attributes if
-                                           item.get('sensor_type_id') == str(sensor_type)]):
-                    attributes = attributes + ',event_id,individual_id'
-                else:
-                    attributes = 'all'
+                if study_attribute_names := {
+                    item.get('short_name') for item in (study_attributes or [])
+                    if item.get('sensor_type_id') == str(sensor_type)
+                }:
+                    attributes = ','.join(sorted(study_attribute_names | self.GPS_COMMON_ATTRIBUTES))
 
-                params = (
-                    ('entity_type', 'event'),
-                    ('study_id', study_id),
-                    ('individual_id', individual_id),
-                    ('timestamp_start', lower_bound),
-                    ('timestamp_end', timestamp_end),
-                    ('sensor_type_id', sensor_type),
-                    ('attributes', attributes),
-                )
-                events = await self._call_api(url=url, params=params)
-                if events:
-                    events = events.content.decode('utf8')
-                    for item in csv.DictReader(io.StringIO(events), delimiter=','):
-                        if int(item.get('event_id')) >= minimum_event_id:
-                            yield item
+            params = (
+                ('entity_type', 'event'),
+                ('study_id', study_id),
+                ('individual_id', individual_id),
+                ('timestamp_start', lower_bound),
+                ('timestamp_end', timestamp_end_str),
+                ('sensor_type_id', sensor_type),
+                ('attributes', attributes),
+            )
+            events = await self._call_api(url=url, params=params)
+            if events:
+                events_csv = events.content.decode('utf8')
+                for item in csv.DictReader(io.StringIO(events_csv), delimiter=','):
+                    if int(item.get('event_id')) >= minimum_event_id:
+                        yield item
 
 
     async def get_individual_events(

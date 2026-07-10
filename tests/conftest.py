@@ -73,3 +73,30 @@ def bad_permissions_filename():
         Path(os.path.dirname(os.path.realpath(__file__))),
         "test_data/bad_permissions.csv"
     )
+
+
+@pytest.fixture
+def mock_movebank_events_response():
+    return (
+        b'event_id,timestamp,location_lat,location_long,individual_id,sensor_type_id\r\n'
+        b'100,2026-01-01 10:00:00.000,1.5,2.5,111,653\r\n'
+        b'101,2026-01-01 11:00:00.000,1.6,2.6,111,653\r\n'
+    )
+
+
+@pytest.fixture
+def mock_movebank_accessory_events_response():
+    return (
+        b'event_id,timestamp,individual_id,sensor_type_id,battery_charge_percent\r\n'
+        b'200,2026-01-01 10:30:00.000,111,7842954,88\r\n'
+    )
+
+
+@pytest.fixture
+def mock_movebank_study_attributes_response():
+    return (
+        b'short_name,sensor_type_id\r\n'
+        b'location_lat,653\r\n'
+        b'location_long,653\r\n'
+        b'ground_speed,653\r\n'
+    )
