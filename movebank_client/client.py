@@ -70,11 +70,9 @@ def on_giveup_429(details):
     # failure. Raise a dedicated type carrying the final 429 response so callers
     # can classify it as a rate limit.
     logger.warning(message)
-    err = MBRateLimitError(message)
-    last_response = details.get('value')
-    if last_response is not None:
-        err.response = last_response
-    raise err
+    # Pass the final 429 response into the constructor so callers can classify
+    # this as a rate limit (e.g. response.status_code == 429).
+    raise MBRateLimitError(message, response=details.get('value'))
 
 
 class MovebankClient:
