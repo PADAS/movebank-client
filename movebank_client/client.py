@@ -15,7 +15,7 @@ from httpx import (
     Timeout,
 )
 from movebank_client import settings
-from movebank_client.errors import MBClientError, MBValidationError, MBForbiddenError
+from movebank_client.errors import MBClientError, MBValidationError, MBForbiddenError, MBRateLimitError
 from movebank_client.enums import TagDataOperations, PermissionOperations
 
 logger = logging.getLogger(__name__)
@@ -65,8 +65,14 @@ def on_giveup_429(details):
     tries = details.get('tries', 0)
     elapsed = details.get('elapsed', 0)
     message = f"Rate limit retries exhausted after {tries} attempts over {elapsed:.1f}s"
-    logger.error(message)
-    raise MBClientError(message)
+    # WARNING, not ERROR: exhausting 429 retries is an expected, recoverable
+    # condition (the caller runs again later), so it should not read as a hard
+    # failure. Raise a dedicated type carrying the final 429 response so callers
+    # can classify it as a rate limit.
+    logger.warning(message)
+    # Pass the final 429 response into the constructor so callers can classify
+    # this as a rate limit (e.g. response.status_code == 429).
+    raise MBRateLimitError(message, response=details.get('value'))
 
 
 class MovebankClient:
