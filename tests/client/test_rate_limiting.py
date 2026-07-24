@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from movebank_client.client import parse_retry_after
-from movebank_client.errors import MBClientError
+from movebank_client.errors import MBClientError, MBRateLimitError
 
 
 def test_parse_retry_after_integer_seconds():
@@ -48,6 +48,10 @@ async def test_429_retries_exhausted_raises(movebank_client):
             ]
         )
         async with movebank_client as client:
-            with pytest.raises(MBClientError):
+            with pytest.raises(MBRateLimitError) as exc_info:
                 await client.get_individuals_by_study(study_id=1234567890)
         assert route.call_count == 3
+        # Dedicated type (still a MBClientError) carrying the final 429 response,
+        # so callers can classify this as a recoverable rate limit.
+        assert isinstance(exc_info.value, MBClientError)
+        assert exc_info.value.response.status_code == 429
